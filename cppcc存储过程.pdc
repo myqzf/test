@@ -1,0 +1,340 @@
+--cppcc
+
+--打开控制台输出
+set serveroutput on
+
+
+-- 存储过程 1
+--根据id 查询详细通知、公告信息
+create or replace procedure notice_info_byid1(
+in_id in varchar2,
+out_id out varchar2,
+noticename out varchar2,
+uploadtime out varchar2,
+publishtime out varchar2,
+noticecontent out clob,
+attachmenturl out varchar2,
+publishdept out varchar2,
+sort out varchar2,
+isnew out varchar2,
+bak1 out varchar2,
+bak2 out varchar2,
+bak3 out varchar2,
+noticetype out varchar2,
+out_info out varchar2)
+is
+v_id cms_notice_info.id%type;
+v_noticename cms_notice_info.noticename%type;
+v_uploadtime cms_notice_info.uploadtime%type;
+v_publishtime cms_notice_info.publishtime%type;
+v_noticecontent cms_notice_info.noticecontent%type;
+v_attachmenturl cms_notice_info.attachmenturl%type;
+v_publishdept cms_notice_info.publishdept%type;
+v_sort cms_notice_info.sort%type;
+v_isnew cms_notice_info.isnew%type;
+v_bak1 cms_notice_info.bak1%type;
+v_bak2 cms_notice_info.bak2%type;
+v_bak3 cms_notice_info.bak3%type;
+v_noticetype cms_notice_info.noticetype%type;
+begin
+  select id,noticename,uploadtime,publishtime,noticecontent,attachmenturl,publishdept,sort,isnew,bak1,bak2,bak3,noticetype
+  into v_id,v_noticename,v_uploadtime,v_publishtime,v_noticecontent,v_attachmenturl,v_publishdept,v_sort,v_isnew,v_bak1,v_bak2,v_bak3,v_noticetype
+  from cms_notice_info
+  where id = in_id;
+   out_id := v_id;
+   noticename:= v_noticename;
+   uploadtime := v_uploadtime;
+   publishtime:= v_publishtime;
+    noticecontent := v_noticecontent;
+   attachmenturl:= v_attachmenturl;
+   publishdept := v_publishdept;
+   sort:= v_sort;
+   isnew := v_isnew;
+   bak1 := v_bak1;
+   bak2 := v_bak2;
+   bak3 := v_bak3;
+   noticetype := v_noticetype;
+   exception
+     when no_data_found then
+       out_info := '未找到数据';
+end notice_info_byid1;
+
+
+--存储过程 2
+--根据id ,查询详细通知、公告信息
+create or replace procedure notice_info_byid(in_id in varchar2,notice_info out sys_refcursor)
+is
+begin
+open notice_info for select * from cms_notice_info where id = in_id;
+end notice_info_byid;
+
+--调用过程2
+declare
+n_info sys_refcursor;
+i cms_notice_info%rowtype;
+begin
+  notice_info_byid('4028818153c09c1d0153c09f29650000',n_info);
+  loop
+    fetch n_info 
+    into i;
+  exit when n_info%notfound;
+     dbms_output.put_line('标题 ：'||i.noticename||'....');
+   end loop;
+   close n_info;
+end;
+
+--存储过程 3
+create or replace procedure notice_info_byid3(in_id in varchar2,notice_info out varchar2)
+is
+begin
+select noticename into notice_info from cms_notice_info where id = in_id;
+end notice_info_byid3;
+
+--存储过程四
+--查询所有通知公告
+create or replace procedure notice_info_all(notice_info out sys_refcursor)
+is
+begin
+  open notice_info for 
+  select a1.* from (select a.* ,rownum rn from (select cni.id,cni.noticename,cni.uploadtime,cni.publishtime,cni.noticecontent,cni.attachmenturl,cni.publishdept,cni.sort,cni.isnew,cni.bak1,cni.bak2,cni.bak3,
+  (case when cni.noticetype=1 then '通知' when cni.noticetype=2 then '公告' end) noticetype
+  from cms_notice_info cni where 2=2 and cni.publishdept like '%党%' order by uploadtime desc) a where rownum<=3) a1 where rn>=2;
+end notice_info_all;
+
+--分页
+select a1.* from (select a.* ,rownum rn from (select * from cms_notice_info) a where rownum<=3) a1 where rn>=2;
+
+--测试 sql
+select * from cppcc_draft_info t where t.isactive!='2' and ((t.draftstatus!=0 and t.draftstatus!=1) or t.isactive=4) and (t.contentnosign like '%文化遗产%'  or t.drafttitle like '%文化遗产%' or t.membername like '%文化遗产%') order by membername asc, decode(draftscope,'十',10,'十一',11,'十二',12,'十三',13) desc, decode(draftci,'一',1,'二',2,'三',3,'四',4,'五',5) desc, t.draftcode
+select a1.* from (select a.* ,rownum rn from (select * from cppcc_draft_info t where t.isactive!='2' and ((t.draftstatus!=0 and t.draftstatus!=1) or t.isactive=4) and (t.contentnosign like '%文化遗产%'  or t.drafttitle like '%文化遗产%' or t.membername like '%文化遗产%') order by membername asc, decode(draftscope,'十',10,'十一',11,'十二',12,'十三',13) desc, decode(draftci,'一',1,'二',2,'三',3,'四',4,'五',5) desc, t.draftcode) a where rownum<=50) a1 where rn>=1;
+
+--存储过程5
+create or replace procedure cppcc_draft_info_all(keyword varchar2,sort_field varchar2,sort_type varchar2 ,draft_info_cursor out sys_refcursor)
+is
+begin
+  open draft_info_cursor for
+  select * from cppcc_draft_info t where t.isactive!='2' and ((t.draftstatus!=0 and t.draftstatus!=1) or t.isactive=4) and (t.contentnosign like '%'||keyword||'%'  or t.drafttitle like '%'||keyword||'%' or t.membername like '%'||keyword||'%') 
+  order by '||sort_field||'|| '||sort_type||',
+  decode(draftscope,'十',10,'十一',11,'十二',12,'十三',13) desc, decode(draftci,'一',1,'二',2,'三',3,'四',4,'五',5) desc, t.draftcode;
+end cppcc_draft_info_all;
+--sort_field varchar2,
+--调用过程5
+declare
+n_info sys_refcursor;
+i cppcc_draft_info%rowtype;
+begin
+  cppcc_draft_info_all(n_info);
+  loop
+    fetch n_info 
+    into i;
+  exit when n_info%notfound;
+     dbms_output.put_line('编号 ：'||i.draftcode||'....');
+   end loop;
+   close n_info;
+end;
+--存储过程6 ，过程5基础上加分页
+create or replace procedure cppcc_draft_info_all2
+(keyword in varchar2,--关键字
+sort_field in varchar2,--排序字段
+sort_type in varchar2,--排序类型
+page_size in number,--一页显示记录数
+pagenow in number,--当前页
+myrows out number,--总记录数
+pagecount out number,--总页数
+draft_info_cursor out sys_refcursor--返回的结果集
+)
+is
+v_begin number:=(pagenow-1)*page_size+1;
+v_end number:=page_size*pagenow;
+v_sortfield varchar2(50):=sort_field;
+begin
+  open draft_info_cursor for
+  select a1.* from (select a.* ,rownum rn from (
+     select * from cppcc_draft_info t where t.isactive<>'2' and ((t.draftstatus<>0 and t.draftstatus<>1) or t.isactive=4) and (t.contentnosign like '%'||keyword||'%'  or t.drafttitle like '%'||keyword||'%' or t.membername like '%'||keyword||'%')
+  order by v_sortfield asc,
+  decode(draftscope,'十',10,'十一',11,'十二',12,'十三',13) desc, decode(draftci,'一',1,'二',2,'三',3,'四',4,'五',5) desc, t.draftcode
+  ) a where rownum<=v_end) a1 where rn>=v_begin;
+  select count(*) into myrows from cppcc_draft_info t where t.isactive<>'2' and ((t.draftstatus<>0 and t.draftstatus<>1) or t.isactive=4) and (t.contentnosign like '%'||keyword||'%'  or t.drafttitle like '%'||keyword||'%' or t.membername like '%'||keyword||'%')
+  order by
+  -- '||sort_field||'|| '||sort_type||',
+  decode(draftscope,'十',10,'十一',11,'十二',12,'十三',13) desc, decode(draftci,'一',1,'二',2,'三',3,'四',4,'五',5) desc, t.draftcode;
+  if mod(myrows,page_size)=0 then
+    pagecount:=myrows/page_size;
+  else 
+    pagecount:= myrows/page_size+1;
+  end if;
+end cppcc_draft_info_all2;
+
+select * from cppcc_draft_info order by draftcode ;
+select count(*) from cppcc_draft_info t where t.isactive!='2' and ((t.draftstatus<>0 and t.draftstatus<>1) or t.isactive=4) and t.membername like '%英%';
+--and (t.contentnosign like ''%'''||keyword||'''%''  or t.drafttitle like ''%'''||keyword||'''%'' or t.membername like ''%'''||keyword||'''%'')
+--or t.drafttitle like ''%'''||keyword||'''%'' or t.membername like ''%'''||keyword||'''%''
+
+--存储过程 7 加分页
+--DraftCheckServiceImpl 中 jq查询全部提案列表 （完整）
+create or replace procedure cppcc_draft_info_all3
+(draftcode varchar2,
+drafttitle varchar2,
+directname varchar2,
+joinname varchar2,
+precode varchar2,
+membername varchar2,
+draftType varchar2,
+draftclassname varchar2,
+draftstatus varchar2,
+draftscope varchar2,
+draftci varchar2,
+--keyword varchar2,
+side varchar2, --排序字段
+sord varchar2,  --排序类型
+pagesize number,--一页记录数
+pagenow number,  --当前页
+rows out number, --总记录数
+pagecount out number, --总页数
+draft_info_cursor out sys_refcursor)
+is
+v_sql varchar2(1000);
+v_sql_count varchar2(1000);
+v_begin number:=(pagenow-1)*pagesize+1;
+v_end number:=pagesize*pagenow;
+begin
+ v_sql:='select a1.* from (
+        select a.* ,rownum rn from (';
+ v_sql:= v_sql ||'select * from cppcc_draft_info t where t.isactive<>''2''';
+    if draftcode is not null then
+       v_sql:=v_sql ||' and t.draftcode like ''%'||draftcode||'%''';
+    end if;
+    if drafttitle is not null then
+       v_sql:=v_sql ||' and t.drafttitle like ''%'||drafttitle||'%''';
+    end if;
+    if directname is not null then
+       v_sql:=v_sql ||' and t.directname like ''%'||directname||'%''';
+    end if;
+    if joinname is not null then
+       v_sql:=v_sql ||' and t.joinname like ''%'||joinname||'%''';
+    end if;
+    if precode is not null then
+       v_sql:=v_sql ||' and t.precode like ''%'||precode||'%''';
+    end if;
+    if membername is not null then
+       v_sql:=v_sql ||' and t.membername like ''%'||membername||'%''';
+    end if;
+    if draftType is not null then
+       v_sql:=v_sql ||' and t.draftType='||draftType;
+    end if;
+    if draftclassname is not null then
+       v_sql:=v_sql ||' and t.draftclassname ='''||draftclassname||'''';
+    end if;
+    if draftstatus is not null then
+      if draftstatus='9' then
+       v_sql:=v_sql ||' and ((t.draftstatus=0 or t.draftstatus=1) and t.isactive=''4'')';
+      else
+         v_sql:=v_sql ||' and t.draftstatus='||draftstatus;
+      end if;
+    else
+       v_sql:=v_sql ||' and ((t.draftstatus<>0 and t.draftstatus<>1) or t.isactive=''4'')';
+    end if;
+    if draftscope is not null then
+       v_sql:=v_sql ||' and t.draftscope='''||draftscope||'''';
+    end if;
+    if draftci is not null then
+       v_sql:=v_sql ||' and t.draftci='''||draftci||'''';
+    end if;
+  v_sql:=v_sql ||'  order by '||side||' '||sord||',t.bak5 desc';
+  v_sql:=v_sql||') a where rownum<='||v_end||') a1 where rn>='||v_begin;
+
+  dbms_output.put_line('sql ：'||v_sql||'....');
+  open draft_info_cursor for v_sql;
+
+ v_sql_count:= 'select count(*) from cppcc_draft_info t where t.isactive<>''2''';
+    if draftcode is not null then
+       v_sql_count:=v_sql_count ||' and t.draftcode like ''%'||draftcode||'%''';
+    end if;
+    if drafttitle is not null then
+       v_sql_count:=v_sql_count ||' and t.drafttitle like ''%'||drafttitle||'%''';
+    end if;
+    if directname is not null then
+       v_sql_count:=v_sql_count ||' and t.directname like ''%'||directname||'%''';
+    end if;
+    if joinname is not null then
+       v_sql_count:=v_sql_count ||' and t.joinname like ''%'||joinname||'%''';
+    end if;
+    if precode is not null then
+       v_sql_count:=v_sql_count ||' and t.precode like ''%'||precode||'%''';
+    end if;
+    if membername is not null then
+       v_sql_count:=v_sql_count ||' and t.membername like ''%'||membername||'%''';
+    end if;
+    if draftType is not null then
+       v_sql_count:=v_sql_count ||' and t.draftType='||draftType;
+    end if;
+    if draftclassname is not null then
+       v_sql_count:=v_sql_count ||' and t.draftclassname ='''||draftclassname||'''';
+    end if;
+    if draftstatus is not null then
+      if draftstatus='9' then
+       v_sql_count:=v_sql_count ||' and ((t.draftstatus=0 or t.draftstatus=1) and t.isactive=''4'')';
+      else
+         v_sql_count:=v_sql_count ||' and t.draftstatus='||draftstatus;
+      end if;
+    else
+       v_sql_count:=v_sql_count ||' and ((t.draftstatus<>0 and t.draftstatus<>1) or t.isactive=''4'')';
+    end if;
+    if draftscope is not null then
+       v_sql_count:=v_sql_count ||' and t.draftscope='''||draftscope||'''';
+    end if;
+    if draftci is not null then
+       v_sql_count:=v_sql_count ||' and t.draftci='''||draftci||'''';
+    end if;
+  v_sql_count:=v_sql_count ||'  order by '||side||' '||sord||',t.bak5 desc';
+ dbms_output.put_line('v_sql_count ：'||v_sql_count||'....');
+  execute immediate v_sql_count into rows;
+  if mod(rows,pagesize)=0 then
+  pagecount:=rows/pagesize;
+  else
+    pagecount:= rows/pagesize+1;
+  end if;
+ -- close draft_info_cursor;
+end cppcc_draft_info_all3;
+
+
+--存储过程 8  越蓬 要求的 sql改写
+create or replace procedure cppcc_draft_info_all4
+(keyword varchar2,
+sort_field varchar2,
+sort_type varchar2,
+pagesize number,
+pagenow number,
+rows out number,
+pagecount out number,
+draft_info_cursor out sys_refcursor)
+is
+v_sql varchar2(1000);
+v_begin number:=(pagenow-1)*pagesize+1;
+v_end number:=pagesize*pagenow;
+begin
+  v_sql:='select a1.* from (';
+  v_sql:= v_sql ||'select a.* ,rownum rn from (
+        select * from cppcc_draft_info t where t.isactive<>''2'' and ((t.draftstatus<>0 and t.draftstatus<>1) or t.isactive=4) and (t.contentnosign like ''%'||keyword||'%''  or t.drafttitle like ''%'||keyword||'%'' or t.membername like ''%'||keyword||'%'')
+  order by '||sort_field||' '||sort_type||',
+  decode(draftscope,''十'',10,''十一'',11,''十二'',12,''十三'',13) desc, decode(draftci,''一'',1,''二'',2,''三'',3,''四'',4,''五'',5) desc, t.draftcode
+  ) a where rownum<='||v_end||') a1 where rn>='||v_begin;
+  dbms_output.put_line('sql ：'||v_sql||'....');
+  open draft_info_cursor for v_sql;
+ v_sql:='select count(*) from cppcc_draft_info t where t.isactive<>''2'' and ((t.draftstatus<>0 and t.draftstatus<>1) or t.isactive=4) and (t.contentnosign like ''%'||keyword||'%''  or t.drafttitle like ''%'||keyword||'%'' or t.membername like ''%'||keyword||'%'')
+  order by '||sort_field||' '||sort_type||',
+  decode(draftscope,''十'',10,''十一'',11,''十二'',12,''十三'',13) desc, decode(draftci,''一'',1,''二'',2,''三'',3,''四'',4,''五'',5) desc, t.draftcode';
+ dbms_output.put_line('sql2 ：'||v_sql||'....');
+  execute immediate v_sql into rows;
+ if mod(rows,pagesize)=0 then
+  pagecount:=rows/pagesize;
+  else
+    pagecount:= rows/pagesize+1;
+  end if;
+ --close draft_info_cursor;
+end cppcc_draft_info_all4;
+
+
+
+
+  
