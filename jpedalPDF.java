@@ -30,7 +30,6 @@ public class jpedalPDF {
 			decode_pdf.openPdfFile("E:/workspace/test05/pdffile/2015-1.pdf"); // file
 
 			// decode_pdf.openPdfFile("C:/myPDF.pdf", "password"); //encrypted
-			// file
 			// decode_pdf.openPdfArray(bytes); //bytes is byte[] array with PDF
 			// decode_pdf.openPdfFileFromURL("http://www.mysite.com/myPDF.pdf",false);
 
